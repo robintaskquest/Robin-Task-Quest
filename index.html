@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robin Task Quest - Lista de Tarefas Gamificada</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/doodle-background.css">
+    <link rel="stylesheet" href="css/custom-colors.css">
+    <link rel="stylesheet" href="css/spotify.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/calendar-integration.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Robin Task Quest</h1>
+            <div class="user-profile">
+                <div class="level-info">
+                    <span class="level">Nível 1</span>
+                    <div class="xp-bar">
+                        <div class="xp-progress" style="width: 0%"></div>
+                    </div>
+                    <span class="xp-text">0/100 XP</span>
+                </div>
+                <div class="theme-toggle">
+                    <span class="theme-toggle-label">Tema</span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle-input">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </header>
+
+        <!-- Container de autenticação -->
+        <div class="auth-container">
+            <div class="user-profile-container">
+                <div class="user-avatar">
+                    <img src="img/default-avatar.png" alt="Avatar" id="user-avatar">
+                </div>
+                <div class="user-info" id="user-profile-info">
+                    <span class="user-name">Visitante</span>
+                    <span class="user-email">Faça login para sincronizar</span>
+                </div>
+            </div>
+            <div class="auth-actions">
+                <span class="login-status" id="login-status">Desconectado</span>
+                <button id="login-button" class="auth-button google-login">
+                    <i class="fab fa-google"></i> Login com Google
+                </button>
+                <button id="logout-button" class="auth-button logout" style="display: none;">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+                <button id="sync-button" class="auth-button sync" style="display: none;">
+                    <i class="fas fa-sync-alt"></i> Sincronizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Integração com Google Agenda -->
+        <div class="calendar-integration-container">
+            <div class="calendar-integration-header">
+                <h3><i class="far fa-calendar-alt"></i> Google Agenda</h3>
+                <div class="calendar-controls">
+                    <span class="calendar-status" id="calendar-status">Desconectado</span>
+                    <button id="calendar-refresh-button" class="calendar-refresh-button">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <div class="calendar-toggle-container">
+                        <span class="calendar-toggle-label">Ativar</span>
+                        <label class="calendar-toggle">
+                            <input type="checkbox" id="google-calendar-toggle" disabled>
+                            <span class="calendar-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="calendar-info">
+                <p>Conecte sua conta Google para importar eventos do Google Agenda como tarefas.</p>
+                <p>Os eventos serão importados automaticamente e categorizados com base nas cores do calendário.</p>
+            </div>
+        </div>
+
+        <!-- Pomodoro horizontal acima das tarefas -->
+        <div class="pomodoro-container">
+            <div class="pomodoro-timer">
+                <h3>Pomodoro</h3>
+                <div class="timer-display">60:00</div>
+                <div class="timer-controls">
+                    <button id="start-timer"><i class="fas fa-play"></i></button>
+                    <button id="pause-timer"><i class="fas fa-pause"></i></button>
+                    <button id="reset-timer"><i class="fas fa-redo"></i></button>
+                </div>
+                <div class="timer-mode">
+                    <button class="timer-mode-btn active" data-mode="work">Trabalho</button>
+                    <button class="timer-mode-btn" data-mode="break">Pausa</button>
+                </div>
+                <button id="pomodoro-settings"><i class="fas fa-cog"></i> Configurações</button>
+            </div>
+        </div>
+
+        <!-- Menu recolhível para playlists do Spotify -->
+        <div class="spotify-container" id="spotify-container">
+            <div class="spotify-toggle" id="spotify-toggle">
+                <i class="fas fa-music"></i> Playlists <i class="fas fa-chevron-down toggle-icon"></i>
+            </div>
+            <div class="spotify-content" id="spotify-content">
+                <div class="playlist-buttons">
+                    <button class="playlist-button" data-playlist-type="citypop" data-playlist-url="https://open.spotify.com/embed/playlist/37i9dQZF1DX8xfQRRX1PDm?utm_source=generator">
+                        <i class="fas fa-city"></i> City Pop
+                    </button>
+                    <button class="playlist-button" data-playlist-type="lofi" data-playlist-url="https://open.spotify.com/embed/playlist/37i9dQZF1DWWQRwui0ExPn?utm_source=generator">
+                        <i class="fas fa-headphones"></i> Lo-Fi
+                    </button>
+                    <button class="playlist-button" data-playlist-type="nature" data-playlist-url="https://open.spotify.com/embed/playlist/37i9dQZF1DX4aYNO8X5RpR?utm_source=generator">
+                        <i class="fas fa-leaf"></i> Sons da Natureza
+                    </button>
+                </div>
+                <div class="spotify-player">
+                    <iframe id="spotify-embed" style="border-radius:12px" src="" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <nav class="main-nav">
+            <div class="view-selector">
+                <button class="view-btn active" data-view="day">Dia</button>
+                <button class="view-btn" data-view="week">Semana</button>
+                <button class="view-btn" data-view="month">Mês</button>
+            </div>
+            <div class="date-navigator">
+                <button id="prev-date"><i class="fas fa-chevron-left"></i></button>
+                <span id="current-date">Hoje</span>
+                <button id="next-date"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </nav>
+
+        <main>
+            <section class="task-categories">
+                <div class="category" data-category="all">
+                    <h2>Todas as Tarefas</h2>
+                    <button class="add-task-btn" data-category="all"><i class="fas fa-plus"></i> Nova Tarefa</button>
+                    <div class="task-list" id="all-tasks"></div>
+                </div>
+                <div class="category" data-category="work">
+                    <h2>Trabalho</h2>
+                    <button class="add-task-btn" data-category="work"><i class="fas fa-plus"></i> Nova Tarefa</button>
+                    <div class="task-list" id="work-tasks"></div>
+                </div>
+                <div class="category" data-category="home">
+                    <h2>Casa</h2>
+                    <button class="add-task-btn" data-category="home"><i class="fas fa-plus"></i> Nova Tarefa</button>
+                    <div class="task-list" id="home-tasks"></div>
+                </div>
+                <div class="category" data-category="personal">
+                    <h2>Pessoal</h2>
+                    <button class="add-task-btn" data-category="personal"><i class="fas fa-plus"></i> Nova Tarefa</button>
+                    <div class="task-list" id="personal-tasks"></div>
+                </div>
+            </section>
+
+            <!-- Calendário abaixo das tarefas -->
+            <section class="calendar-container">
+                <div class="calendar-header">
+                    <h3>Calendário</h3>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Dias da semana -->
+                    <div class="calendar-day-header">Dom</div>
+                    <div class="calendar-day-header">Seg</div>
+                    <div class="calendar-day-header">Ter</div>
+                    <div class="calendar-day-header">Qua</div>
+                    <div class="calendar-day-header">Qui</div>
+                    <div class="calendar-day-header">Sex</div>
+                    <div class="calendar-day-header">Sáb</div>
+                    
+                    <!-- Os dias do calendário serão gerados dinamicamente pelo JavaScript -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal para adicionar tarefa -->
+        <div class="modal" id="add-task-modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Nova Tarefa</h2>
+                <form id="add-task-form">
+                    <div class="form-group">
+                        <label for="task-title">Título</label>
+                        <input type="text" id="task-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-description">Descrição</label>
+                        <textarea id="task-description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-category">Categoria</label>
+                        <select id="task-category">
+                            <option value="work">Trabalho</option>
+                            <option value="home">Casa</option>
+                            <option value="personal">Pessoal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-priority">Prioridade</label>
+                        <select id="task-priority">
+                            <option value="normal">Normal</option>
+                            <option value="high">Alta</option>
+                            <option value="urgent">Urgente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-date">Data</label>
+                        <input type="date" id="task-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-xp">Pontos de XP</label>
+                        <input type="number" id="task-xp" min="1" max="100" value="10" readonly>
+                        <small>XP baseado na prioridade: Normal (10), Alta (20), Urgente (30)</small>
+                    </div>
+                    <button type="submit" class="btn-primary">Adicionar Tarefa</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para configurações do pomodoro -->
+        <div class="modal" id="pomodoro-settings-modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Configurações do Pomodoro</h2>
+                <form id="pomodoro-settings-form">
+                    <div class="form-group">
+                        <label for="work-time">Tempo de Trabalho (minutos)</label>
+                        <input type="number" id="work-time" min="1" max="60" value="60">
+                    </div>
+                    <div class="form-group">
+                        <label for="break-time">Tempo de Pausa (minutos)</label>
+                        <input type="number" id="break-time" min="1" max="30" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="long-break-time">Tempo de Pausa Longa (minutos)</label>
+                        <input type="number" id="long-break-time" min="5" max="60" value="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="pomodoro-count">Pomodoros até Pausa Longa</label>
+                        <input type="number" id="pomodoro-count" min="1" max="10" value="2">
+                    </div>
+                    <button type="submit" class="btn-primary">Salvar Configurações</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal para visualização de tarefa -->
+        <div class="modal" id="view-task-modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2 id="view-task-title">Título da Tarefa</h2>
+                <div class="task-details">
+                    <p id="view-task-description">Descrição da tarefa</p>
+                    <div class="task-meta">
+                        <div class="meta-item">
+                            <strong>Categoria:</strong>
+                            <span id="view-task-category">Categoria</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Prioridade:</strong>
+                            <span id="view-task-priority">Prioridade</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Data:</strong>
+                            <span id="view-task-date">Data</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>XP:</strong>
+                            <span id="view-task-xp">XP</span>
+                        </div>
+                        <div class="meta-item">
+                            <strong>Status:</strong>
+                            <span id="view-task-status">Status</span>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button id="edit-task-btn" class="btn-secondary">Editar</button>
+                        <button id="complete-task-btn" class="btn-success">Marcar como Concluída</button>
+                        <button id="delete-task-btn" class="btn-danger">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para personalização -->
+        <div class="modal" id="customization-modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Personalização</h2>
+                <div class="customization-tabs">
+                    <button class="tab-btn active" data-tab="colors">Cores</button>
+                    <button class="tab-btn" data-tab="backgrounds">Planos de Fundo</button>
+                    <button class="tab-btn" data-tab="columns">Colunas</button>
+                </div>
+                <div class="tab-content" id="colors-tab">
+                    <h3>Esquemas de Cores</h3>
+                    <div class="color-schemes">
+                        <div class="
+(Content truncated due to size limit. Use line ranges to read in chunks)
